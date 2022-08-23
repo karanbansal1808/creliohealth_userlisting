@@ -15,7 +15,8 @@ Userdetails_PER_PAGE = 5
 
 
 def index(request):
-
+    if len(Userdetails.objects.all()) == 0:
+        getdata(request)
     search = request.GET.get('search', "")
     gendercheck = request.GET.get('gender', "")
     if search:
@@ -45,7 +46,10 @@ def details(request, detail):
 
 
 def getdata(request):
-    response = requests.get('https://randomuser.me/api/?results=20')
+    Userdetails.objects.all().delete()
+    response = requests.get('https://randomuser.me/api/?results=100')
+    if response.status_code != 200:
+        return render(request, "error.html")
     datas = response.json(cls=json.JSONDecoder)["results"]
     data = pd.json_normalize(datas)
     data.to_csv("inputs.csv")
@@ -82,8 +86,6 @@ def getdata(request):
             else:
                 setattr(userdetail, k, v)
         userdetail.save()
-
-    return render(request, "myfirst.html")
 
 
 def suggestionApi(request):
