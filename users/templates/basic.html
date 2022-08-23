@@ -1,0 +1,16 @@
+
+<div class="border mb-3 bg-warning">
+  <div class="text-center mx-auto">
+    <h4>{{user.name}}</h4>
+    <h6>{{user.username}}</h6>
+  </div>
+</div>
+
+<li>Address : {{user.location}}, {{user.city}}, {{user.state}}, {{user.postcode}}</li><hr>
+<li>Country : {{user.country}}</li><hr>
+<li>Email : {{user.email}}</li><hr>
+<li>Registered : {{user.registered|slice:"0:10"}}</li><hr>
+<li>Nationality : {{user.nationality}}</li><hr>
+<li>Date of Birth : {{user.dob}}</li><hr>
+<li>Phone : {{user.phone}}, {{user.cell}}</li><hr>
+<li>ID : {{user.id}}</li><hr>
