@@ -1,7 +1,7 @@
 import requests
 from multiprocessing import context
 from urllib.request import Request
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.template import loader
 from .models import Userdetails
@@ -16,11 +16,12 @@ Userdetails_PER_PAGE = 5
 
 def index(request):
     if len(Userdetails.objects.all()) == 0:
-        getdata(request)
+        return redirect(getdata)
     search = request.GET.get('search', "")
     gendercheck = request.GET.get('gender', "")
     if search:
-        User = Userdetails.objects.filter(Q(name__icontains=search))
+        User = Userdetails.objects.filter(
+            Q(name__icontains=search) | Q(id__icontains=search))
 
     else:
         User = Userdetails.objects.all()
@@ -46,8 +47,10 @@ def details(request, detail):
 
 
 def getdata(request):
-    Userdetails.objects.all().delete()
-    response = requests.get('https://randomuser.me/api/?results=100')
+    if len(Userdetails.objects.all()) > 0:
+        Userdetails.objects.all().delete()
+    count = request.GET.get("result", "20")
+    response = requests.get('https://randomuser.me/api/?results='+count)
     if response.status_code != 200:
         return render(request, "error.html")
     datas = response.json(cls=json.JSONDecoder)["results"]
@@ -71,36 +74,17 @@ def getdata(request):
     add["registered"] = data["registered.date"]
     add["phone"] = data["phone"]
     add["cell"] = data["cell"]
-    if data["id.name"] is not None and data["id.value"] is not None:
-        add["id"] = data[["id.name", "id.value"]].fillna(
-            " ").apply(lambda x: "".join(x), axis=1)
+    add["id"] = data[["id.name", "id.value"]].fillna(
+        " ").apply(lambda x: "".join(x), axis=1)
     add["picture"] = data["picture.thumbnail"]
     add["nationality"] = data["nat"]
-    print(add)
     for i in add.to_dict(orient="records"):
         userdetail = Userdetails()
         for k, v in i.items():
-            if k == "dob":
+            if k == "dob" or k == "registered":
                 setattr(userdetail, k, datetime.datetime.strptime(
                     v, '%Y-%m-%dT%H:%M:%S.%fZ'))
             else:
                 setattr(userdetail, k, v)
         userdetail.save()
-
-
-def suggestionApi(request):
-    if 'term' in request.GET:
-        search = request.GET.get('term')
-        qs = Userdetails.objects.filter(
-            Q(name__icontains=search) | Q(id__icontains=search))[0:20]
-        titles = list()
-        for users in qs:
-            titles.append(users.name)
-        return JsonResponse(titles, safe=False)
-
-
-def search_results(request):
-    query = request.GET.get("q")
-    object_list = Userdetails.objects.filter(
-        Q(name__icontains=query) | Q(id__icontains=query)
-    )
+    return redirect(index)
